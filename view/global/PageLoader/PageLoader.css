@@ -1,0 +1,23 @@
+
+  .loader{
+   position:fixed; inset:0; z-index:9999;
+   display:grid; place-items:center;
+   background:rgba(255,255,255,.9);
+   cursor:wait; transition:opacity .25s, visibility .25s;
+  }
+  .loader.hide{
+   opacity:0;
+   visibility:hidden;
+   pointer-events:none;
+  }
+  .spin{
+   width:48px; height:48px;
+   border-radius:50%;
+   border:4px solid #ddd;
+   border-top-color:#333;
+   animation:spin 1s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* (opcional) cursor de espera global cuando está visible */
+  html.is-loading, html.is-loading * { cursor: wait !important; }

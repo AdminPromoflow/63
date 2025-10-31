@@ -1,0 +1,89 @@
+/* ===== CONTENEDOR MAIN (Hero + Grid) ===== */
+.main_main{
+  /* fondo claro tipo ecommerce */
+  margin: 0 auto;
+  padding: 1rem;
+  box-sizing: border-box;
+
+  /* Grid del layout: título arriba, grid abajo */
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: clamp(1rem, 2vw, 2rem);
+  justify-items: center;
+
+  /* hace que cubra la pantalla sin pelear con el header */
+}
+
+/* ===== HERO / TÍTULO ===== */
+.title_main{
+  width: min(1200px, 92%);
+  text-align: center;
+}
+.title_main h1{
+  margin: 1rem 0;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -.02em;
+  font-size: clamp(1.75rem, 3.8vw, 4rem); /* grande como en el mock */
+  color: #111827;
+}
+
+/* (Opcional) si agregas un botón bajo el título */
+.title_main .cta{
+  margin-top: 1.25rem;
+  display: inline-block;
+  padding: .9rem 1.25rem;
+  border-radius: 10px;
+  background: #111827;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform .15s ease, opacity .15s ease;
+}
+.title_main .cta:hover{ transform: translateY(-1px); opacity: .95; }
+
+/* ===== GRID DE PRODUCTOS ===== */
+.container_main{
+  width: min(1200px, 92%);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(1rem, 2vw, 2rem);
+  align-items: start;
+}
+
+/* ===== CARD DE PRODUCTO ===== */
+.product_main{
+  display: grid;
+  grid-template-rows: auto auto;
+  justify-items: center;
+  gap: .75rem;
+  text-align: center;
+}
+
+.product_main img{
+  width: 100%;
+  max-width: 220px;              /* tamaño visual similar al mock */
+  aspect-ratio: 1 / 1;           /* cuadrado; ajusta si tus imágenes no lo son */
+  object-fit: contain;
+  border-radius: 14px;
+}
+
+.product_main h1{
+  margin: 0;
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px){
+  .container_main{ grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px){
+  .container_main{ grid-template-columns: repeat(2, 1fr); }
+  .title_main h1{ font-size: clamp(1.5rem, 5.5vw, 2.6rem); }
+}
+@media (max-width: 480px){
+  .container_main{ grid-template-columns: 1fr; }
+  .title_main{ width: 94%; }
+}

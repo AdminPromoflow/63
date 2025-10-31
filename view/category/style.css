@@ -1,0 +1,44 @@
+* {
+     margin: 0;
+     padding: 0;
+     box-sizing: border-box;
+     scroll-behavior:smooth;
+     font-size: 16px; /* base */
+   }
+   .body_category{
+     font-family: 'Poppins', sans-serif;
+     width: 100vw;
+     overflow-x: hidden;
+     padding: 1rem;
+     background-color: #fafafa;
+     box-sizing: border-box;
+     display: flex;
+     flex-direction: column;
+     height: 100%;
+     overflow-y: scroll;
+   }
+   p {
+     font-size: clamp(1rem, 1.2vw, 1.4rem);
+   }
+   h3 {
+     font-size: clamp(1.2rem, 1.5vw, 1.6rem);
+   }
+   h2 {
+     font-size: clamp(1.5rem, 2vw, 2.2rem);
+   }
+   h1 {
+     font-size: clamp(1.8rem, 3vw, 2.8rem);
+   }
+label input button{
+  font-size: clamp(.8rem, 1vw, 1.3rem);
+}
+:root{
+     --bg:#0f172a;      /* slate-900 */
+     --card:#111827;    /* gray-900  */
+     --muted:#9ca3af;   /* gray-400  */
+     --text:#f9fafb;    /* gray-50   */
+     --accent:#3b82f6;  /* blue-500  */
+     --ring:#60a5fa;    /* blue-400  */
+     --danger:#ef4444;  /* red-500   */
+     --radius:5px;
+   }
