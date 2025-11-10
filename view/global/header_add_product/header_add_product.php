@@ -6,7 +6,7 @@
   <a class="cp-tab" data-href="../../view/variations/index.php" tabindex="0">variations</a>
   <a class="cp-tab" data-href="../../view/images/index.php" tabindex="0">images</a>
   <a class="cp-tab" data-href="../../view/items/index.php" tabindex="0">items</a>
-  <a class="cp-tab" data-href="../../view/items/index.php" tabindex="0">prices</a>
+  <a class="cp-tab" data-href="../../view/prices/index.php" tabindex="0">prices</a>
   <a class="cp-tab" data-href="preview_porduct.php" tabindex="0">preview_porduct</a>
 </nav>
 

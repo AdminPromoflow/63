@@ -83,13 +83,16 @@ class Variations {
       $pdfPath     = '';
 
       if ($isAttachAnImage) {
-        $resImg = $this->uploadBlockWithTrace($imageFile, 'imageFile', 'handleImageUpload', $supplier, $sku_product, $sku_variation);
-        $imagePath   = $resImg['path'];
+        $resImg = $this->handleImageUpload($imageFile,  $supplier, $sku_product, $sku_variation);
+        $imagePath   = $resImg;
       }
+
       if ($isAttachAPDF) {
-        $resPdf = $this->uploadBlockWithTrace($pdfFile, 'pdfFile', 'handlePdfUpload', $supplier, $sku_product, $sku_variation);
-        $pdfPath     = $resPdf['path'];
+        $resPdf = $this->handlePdfUpload($pdfFile, $supplier, $sku_product, $sku_variation);
+        $pdfPath     = $resPdf;
       }
+
+
 
 
       $connection = new Database();
@@ -106,6 +109,7 @@ class Variations {
 
       $ok = $variation->updateVariationDetails();
 
+
       echo json_encode([
           'success'        => $ok,
           'image_path'     => $imagePath ?: '',
@@ -116,211 +120,120 @@ class Variations {
   }
 
 
-  /**
-   * Ejecuta el bloque de validación + subida y devuelve path y trace.
-   * $label debe ser 'imageFile' o 'pdfFile' para mantener las etiquetas del trace.
-   */
-  private function uploadBlockWithTrace(
-      ?array $file,
-      string $label,                 // 'imageFile' | 'pdfFile'
-      string $uploaderMethod,        // 'handleImageUpload' | 'handlePdfUpload'
-      array $supplier,
-      ?string $sku_product,
-      ?string $sku_variation
-      ): array {
-      $path  = '';
-      $trace = [];
-
-      if ($file) {
-          $trace[] = 'has_' . $label;
-          if (is_array($file)) {
-              $trace[] = 'is_array_' . $label;
-              $err = $file['error'] ?? UPLOAD_ERR_NO_FILE;
-              if ($err === UPLOAD_ERR_OK) {
-                  $trace[] = 'error_ok';
-                  $tmp = $file['tmp_name'] ?? '';
-                  if (!empty($tmp)) {
-                      $trace[] = 'tmp_name_present';
-                      if (file_exists($tmp)) {
-                          $trace[] = 'tmp_exists';
-
-                          if (method_exists($this, $uploaderMethod)) {
-                              $path = $this->{$uploaderMethod}($file, $supplier, $sku_product, $sku_variation) ?? '';
-                              $trace[] = $path ? 'moved_ok' : 'move_failed';
-                          } else {
-                              $trace[] = 'uploader_method_not_found';
-                          }
-                      } else {
-                          $trace[] = 'tmp_not_found_on_fs';
-                      }
-                  } else {
-                      $trace[] = 'tmp_name_empty';
-                  }
-              } else {
-                  $trace[] = 'upload_error_' . $err;
-              }
-          } else {
-              $trace[] = $label . '_not_array';
-          }
-      } else {
-          $trace[] = 'no_' . $label;
-      }
-
-      return [
-          'path'  => $path,
-          'trace' => $trace,
-      ];
-  }
-
-
-
 
   /**
    * Stub: función “desocupada”. No sube ni valida nada.
    * Acepta nulls de forma segura.
    */
-   private function handleImageUpload(?array $imageFile, ?array $supplier, ?string $sku_product, ?string $sku_variation): ?string {
-       if (!$imageFile || empty($imageFile['tmp_name']) || ($imageFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+   private function handleImageUpload(?array $imageFile = null, ?array $supplier = null, ?string $sku_product = null, ?string $sku_variation = null)
+   {
+
+       // Helpers
+       $clean = fn($v) => trim((string)$v);
+       $seg   = fn($v) => preg_replace('/[^\w\-]/', '_', $clean($v));
+
+       // 1) Archivo de origen
+       $f = $imageFile ?? ($_FILES['file'] ?? null);
+       if (!$f || !isset($f['error'], $f['name'], $f['tmp_name']) || $f['error'] !== UPLOAD_ERR_OK) {
            return null;
        }
+       $tmp  = $f['tmp_name'];
+       $orig = $f['name'];
+       if (!is_uploaded_file($tmp)) return null;
 
-       $base = realpath(__DIR__ . '/../');            // .../controller
-       if ($base === false) return null;
-       $base = rtrim(str_replace('\\','/',$base), '/');
+       // 2) Datos limpios
+       $supplierId   = $seg($supplier['supplier_id']   ?? 'nd');
+       $supplierName = $seg($supplier['supplier_name'] ?? 'nd');
+       $skuP         = $seg($sku_product);
+       $skuV         = $seg($sku_variation);
 
-       $clean = function (?string $s): string {
-           $s = (string)$s;
-           $s = preg_replace('/[^\pL\pN._-]+/u', '-', $s);
-           return trim($s ?? '', '-_. ') ?: 'nd';
-       };
+       // 3) Ruta ABSOLUTA al folder "controller" (este archivo vive en controller/products/*)
+       $controllerDir = realpath(__DIR__ . '/..'); // -> /ruta/a/63/controller
+       if ($controllerDir === false) return null;
 
-       $supplierId   = $clean($supplier['supplier_id']   ?? 'nd');
-       $supplierName = $clean($supplier['supplier_name'] ?? 'nd');
-       $skuP         = $clean($sku_product);
-       $skuV         = $clean($sku_variation);
+       // 4) Directorio destino (dentro de controller/uploads/...)
+       $dir = $controllerDir . '/uploads/' . $supplierId . '_' . $supplierName . '/' . $skuP . '/' . $skuV . '/';
 
-       $dir = $base . '/uploads/' . $supplierId . '_' . $supplierName . '/' . $skuP . '/' . $skuV;
-       if (!is_dir($dir) && !mkdir($dir, 0775, true)) {
-           throw new RuntimeException('No se pudo crear el directorio de destino');
-       }
-
-       $extAllow = ['jpg','jpeg','png','webp'];
-       $name = $clean(pathinfo($imageFile['name'] ?? 'imagen', PATHINFO_FILENAME));
-       $ext  = strtolower(pathinfo($imageFile['name'] ?? '', PATHINFO_EXTENSION));
-       if (!in_array($ext, $extAllow, true)) {
-           throw new RuntimeException('Extensión de imagen no permitida');
-       }
-
-       $destPath = $dir . '/' . $name . '.' . $ext;
-       $tmp = $imageFile['tmp_name'];
-
-       if (!move_uploaded_file($tmp, $destPath)) {
-           // intento alterno por si llega desde fetch() sin is_uploaded_file
-           if (!rename($tmp, $destPath) && !copy($tmp, $destPath)) {
-               throw new RuntimeException('No se pudo mover el archivo subido');
-           }
-       }
-       chmod($destPath, 0664);
-
-       // ruta relativa desde /controller (coincide con donde queda guardado)
-       $rel = ltrim(str_replace('\\','/', substr($destPath, strlen($base))), '/');
-       return 'controller/' . $rel;   // p.ej. controller/uploads/123_Supplier/SKU/VRT/imagen.jpg
-   }
-
-
-   /**
-    * Sube un PDF de arte final y devuelve la ruta relativa desde /controller
-    * p.ej.: controller/uploads/<supplier>/<sku>/<sku_variation>/archivo.pdf
-    */
-   private function handlePdfUpload(
-       ?array $pdfFile,
-       ?array $supplier = null,
-       ?string $sku_product = null,
-       ?string $sku_variation = null
-   ): ?string {
-       // 1) Validaciones mínimas del upload
-       if (
-           !$pdfFile ||
-           empty($pdfFile['tmp_name']) ||
-           ($pdfFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK
-       ) {
-           return null;
-       }
-
-       // 2) Base y normalización de rutas
-       $base = realpath(__DIR__ . '/../');           // .../controller
-       if ($base === false) return null;
-       $base = rtrim(str_replace('\\','/',$base), '/');
-
-       // 3) Sanitizador simple para componer rutas/archivos
-       $clean = function (?string $s): string {
-           $s = (string)$s;
-           $s = preg_replace('/[^\pL\pN._-]+/u', '-', $s);
-           $s = trim($s, '-_. ');
-           return $s !== '' ? $s : 'nd';
-       };
-
-       // 4) Bloque de metadatos de destino
-       $supplierId   = $clean($supplier['supplier_id']   ?? 'nd');
-       $supplierName = $clean($supplier['supplier_name'] ?? 'nd');
-       $skuP         = $clean($sku_product);
-       $skuV         = $clean($sku_variation);
-
-       // 5) Carpeta final: controller/uploads/<supplier>/<sku>/<variation>
-       $dir = $base . '/uploads/' . $supplierId . '_' . $supplierName . '/' . $skuP . '/' . $skuV;
+       // Crear si no existe
        if (!is_dir($dir)) {
-           $old = umask(0000);
-           if (!mkdir($dir, 0775, true)) {
-               umask($old);
-               throw new RuntimeException('No se pudo crear el directorio de destino');
-           }
-           umask($old);
-           chmod($dir, 0775);
-       }
-
-       // 6) Validaciones de tipo/size
-       $origNameNoExt = pathinfo($pdfFile['name'] ?? 'documento', PATHINFO_FILENAME);
-       $name = $clean($origNameNoExt) ?: 'documento';
-       $ext  = strtolower(pathinfo($pdfFile['name'] ?? '', PATHINFO_EXTENSION));
-
-       // Fuerza PDF por extensión y valida extensión declarada
-       if ($ext !== 'pdf') {
-           // Si vino con otra extensión, igual lo guardamos como .pdf
-           $ext = 'pdf';
-       }
-
-       // (Opcional) límite de tamaño: 20MB
-       if (!empty($pdfFile['size']) && (int)$pdfFile['size'] > 20 * 1024 * 1024) {
-           throw new RuntimeException('El PDF excede el límite de 20MB');
-       }
-
-       // Valida MIME (si está disponible en el server)
-       $tmp = $pdfFile['tmp_name'];
-       if (function_exists('finfo_open')) {
-           $f = finfo_open(FILEINFO_MIME_TYPE);
-           if ($f) {
-               $mime = finfo_file($f, $tmp) ?: '';
-               finfo_close($f);
-               // Acepta application/pdf; tolera application/octet-stream si la ext es pdf
-               if ($mime !== 'application/pdf' && $mime !== 'application/octet-stream') {
-                   throw new RuntimeException('El archivo no parece un PDF válido');
-               }
+           if (!mkdir($dir, 0755, true)) {
+               // Opcional: log para depurar permisos/ruta
+               error_log("No se pudo crear el directorio: " . $dir);
+               return null;
            }
        }
 
-       // 7) Mover archivo (con fallback si llega desde fetch sin is_uploaded_file)
-       $destPath = $dir . '/' . $name . '.pdf';
-       if (!move_uploaded_file($tmp, $destPath)) {
-           if (!rename($tmp, $destPath) && !copy($tmp, $destPath)) {
-               throw new RuntimeException('No se pudo mover el PDF subido');
-           }
-       }
-       @chmod($destPath, 0664);
+    //   echo json_encode();
 
-       // 8) Devuelve ruta relativa desde /controller (coherente con tu frontend)
-       $rel = ltrim(str_replace('\\','/', substr($destPath, strlen($base))), '/'); // uploads/...
-       return 'controller/' . $rel; // controller/uploads/.../archivo.pdf
+       // 5) Validación extensión + nombre seguro
+       $allow = ['jpg','jpeg','png','gif','webp'];
+       $ext   = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
+       if (!in_array($ext, $allow, true)) return null;
+
+       $safeName = bin2hex(random_bytes(8)) . '.' . $ext;
+
+       // 6) Mover archivo al destino absoluto
+       if (!move_uploaded_file($tmp, $dir . $safeName)) return null;
+
+       // 7) Ruta RELATIVA pública que quieres devolver (sin “63”)
+       //    uploads está dentro de controller/
+       $rel = 'controller/uploads/' . $supplierId . '_' . $supplierName . '/' . $skuP . '/' . $skuV . '/' . $safeName;
+       return $rel;
    }
+
+
+
+   private function handlePdfUpload(?array $pdfFile = null, ?array $supplier = null, ?string $sku_product = null, ?string $sku_variation = null): ?string
+   {
+       // Helpers (mismos de imagen)
+       $clean = fn($v) => trim((string)$v);
+       $seg   = fn($v) => preg_replace('/[^\w\-]/', '_', $clean($v));
+
+       // 1) Archivo de origen
+       $f = $pdfFile ?? ($_FILES['file'] ?? null);
+       if (!$f || !isset($f['error'], $f['name'], $f['tmp_name']) || $f['error'] !== UPLOAD_ERR_OK) {
+           return null;
+       }
+
+       $tmp  = $f['tmp_name'];
+       $orig = $f['name'];
+       if (!is_uploaded_file($tmp)) return null;
+
+       // 2) Datos limpios
+       $supplierId   = $seg($supplier['supplier_id']   ?? 'nd');
+       $supplierName = $seg($supplier['supplier_name'] ?? 'nd');
+       $skuP         = $seg($sku_product);
+       $skuV         = $seg($sku_variation);
+
+
+       // 3) Ruta ABSOLUTA al folder "controller" (este archivo vive en controller/products/*)
+       $controllerDir = realpath(__DIR__ . '/..'); // -> /ruta/a/63/controller
+       if ($controllerDir === false) return null;
+
+       // 4) Directorio destino
+       $dir = $controllerDir . '/uploads/' . $supplierId . '_' . $supplierName . '/' . $skuP . '/' . $skuV . '/';
+       if (!is_dir($dir)) {
+           if (!mkdir($dir, 0755, true)) {
+               error_log("No se pudo crear el directorio: " . $dir);
+               return null;
+           }
+       }
+
+       // 5) Validación: solo PDF
+       $ext = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
+       if ($ext !== 'pdf') return null;
+
+       // Nombre seguro .pdf
+       $safeName = bin2hex(random_bytes(8)) . '.pdf';
+
+       // 6) Mover archivo
+       if (!move_uploaded_file($tmp, $dir . $safeName)) return null;
+
+       // 7) Devolver ruta RELATIVA pública
+       $rel = 'controller/uploads/' . $supplierId . '_' . $supplierName . '/' . $skuP . '/' . $skuV . '/' . $safeName;
+       return $rel;
+   }
+
 
 
 

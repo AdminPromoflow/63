@@ -9,7 +9,7 @@ class HeaderAddProduct {
     for (var i = 0; i < cp_tab.length; i++) {
       cp_tab[i].addEventListener("click", function (e) {
         e.preventDefault();
-        const href = this ? this.dataset.href : null; 
+        const href = this ? this.dataset.href : null;
         window.headerAddProduct.goNext(href);
 
       });
@@ -29,8 +29,6 @@ class HeaderAddProduct {
     if (skuv) dest.searchParams.set('sku_variation', skuv);
 
     window.location.assign(dest);
-
-
   }
 
 

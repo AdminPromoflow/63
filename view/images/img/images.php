@@ -14,12 +14,12 @@ $jsTime  = filemtime('../../view/images/img/images.js');
 
     <header class="cp-card-header">
 
-      <h2 id="cp-vi-title">Variation Images</h2>
+      <h2 id="cp-vi-title">Images</h2>
 
         <!-- Mini menú variaciones (derecha) -->
         <div class="cp-actions" style="gap:6px; position:relative;">
           <button class="btn btn-ghost" id="menu_btn" type="button" aria-haspopup="true" aria-expanded="false">
-            Variations ▾
+            Change variation ▾
           </button>
           <ul id="menu_list" class="cp-menu-list" hidden
               style="position:absolute; right:0; top:110%; list-style:none; margin:0; padding:6px; background:#fff; border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); min-width:220px; max-height:260px; overflow:auto;">
@@ -35,7 +35,6 @@ $jsTime  = filemtime('../../view/images/img/images.js');
       <!-- ÚNICA SECCIÓN: Dropzone + Galería -->
       <div class="cp-field">
 
-        <label class="cp-label" for="images_input">Images</label>
 
         <div id="dropzone" class="cp-dropzone" tabindex="0" aria-describedby="dz_help">
           <p><strong>Click to select</strong> or drag & drop images here</p>

@@ -96,3 +96,52 @@
 /* Responsive */
 @media (max-width: 860px){ .cp-form{ grid-template-columns:1fr; } }
 @media (max-width: 720px){ .cp-list{ grid-template-columns: 1fr; } }
+
+
+
+
+/* ===== Variations menu ===== */
+#menu_list{
+  /* si quieres, controla el ancho/alto desde CSS en vez de inline */
+  min-width:240px;
+  max-height:260px;
+  overflow:auto;
+  padding:6px;
+  margin:0;
+  list-style:none;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:12px;
+  box-shadow:var(--shadow);
+}
+
+#menu_list li{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:12px 14px;         /* ↑ más alto */
+  min-height:48px;           /* ↑ alto mínimo mayor */
+  line-height:1.2;
+  cursor:pointer;
+  border-radius:10px;
+  transition:background .15s ease, color .15s ease, transform .06s ease;
+}
+
+#menu_list li:hover{
+  background: var(--bg);     /* hover suave */
+}
+
+#menu_list li:active{
+  transform: translateY(1px);
+}
+
+#menu_list li.is-selected{
+  background: var(--bg);
+  outline: 2px solid var(--brand);
+  outline-offset: 2px; /* opcional: separa el contorno del borde */
+}
+
+#menu_list li:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0,85,72,.14);
+}

@@ -90,9 +90,34 @@ class Images {
     if (window.headerAddProduct) {
       window.headerAddProduct.setCurrentHeader('images');
       const nextBtn = document.getElementById('next_images');
-      nextBtn && nextBtn.addEventListener('click', () =>
-        window.headerAddProduct.goNext('../../view/items/index.php')
-      );
+      nextBtn && nextBtn.addEventListener('click',  e => {
+
+        e.preventDefault();
+        const params = new URLSearchParams(window.location.search);
+        const sku_variation = params.get('sku_variation');
+        const sku_product   = params.get('sku');
+
+        const locals = this.items.filter(it => it.origin === 'local');
+        if (locals.length) {
+          const fd = new FormData();
+          fd.append('action', 'create_update_images');
+          fd.append('sku_variation', sku_variation ?? '');
+          fd.append('sku_product',   sku_product ?? '');
+          fd.append('meta', JSON.stringify(locals.map((it,i)=>({ order:i, filename: it.name }))));
+
+          locals.forEach(it => fd.append('images[]', it.file, it.name));
+
+          this.createUpdateImages(fd);
+        }
+
+
+
+        setTimeout(() => {
+          window.headerAddProduct.goNext('../../view/items/index.php');
+        }, 1300);
+
+
+      });
     }
 
     const $ = s => document.querySelector(s);
@@ -205,6 +230,49 @@ class Images {
 
   // ====== Quitar por id (DOM + estado) ======
   removeById(id) {
+    const btn = document.querySelector(`button[data-id="${CSS.escape(id)}"]`);
+      if (!btn) return -1;
+
+      // 2) Toma la primera clase del botón
+      const cls = btn.classList[0];
+      if (!cls) return -1;
+
+      // 3) Busca todos los botones con esa misma clase
+      const list = Array.from(document.querySelectorAll(`button.${CSS.escape(cls)}`));
+
+      // 4) Devuelve el índice del botón dentro de esa lista (0, 1, 2, ...)
+      var index = list.indexOf(btn);
+
+      // Usar el mismo índice para obtener la imagen correspondiente
+      const img = document.querySelectorAll(".thumb-img")[index];
+
+      let src =
+        img?.getAttribute('src') ||
+        img?.getAttribute('data-src') ||
+        img?.getAttribute('data-original') ||
+        img?.currentSrc ||
+        '';
+
+        src = src.replace(/^(\.\.\/){2}/, "");
+
+      // 'src' es string: obtener pathname con URL para extraer el nombre
+      const filename = new URL(src, window.location.href).pathname.split('/').pop();
+      const name = decodeURIComponent(filename);
+
+      const allowed = ['jpg','jpeg','png','gif','webp'];
+
+      // obtener extensión (sin el punto)
+      const ext = name.split('.').pop().toLowerCase();
+
+      // verificar si NO tiene extensión o NO está permitida
+      const validExt = name.includes('.') || !allowed.includes(ext);
+
+      if (validExt) {
+        this.sendAjaxtRequestDeleteImage(src);
+      }
+
+
+
     const idx = this.items.findIndex(x => x.id === id);
     if (idx === -1) return;
     const it = this.items[idx];
@@ -230,6 +298,47 @@ class Images {
     // Por eso anteponemos "../../" para llegar a /controller/...
     if (!link) return '';
     return link.startsWith('http') ? link : `../../${String(link).replace(/^\/+/, '')}`;
+  }
+
+  sendAjaxtRequestDeleteImage(link_image){
+    const params = new URLSearchParams(window.location.search);
+    const sku_variation = params.get('sku_variation');
+
+
+    const url = "../../controller/products/image.php";
+    const data = {
+      action: "delete_image",
+      sku_variation: sku_variation,
+      link_image: link_image
+      };
+    // Make a fetch request to the given URL with the specified data.
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    })
+      .then(response => {
+        // Check if the response is okay, if so, return the response text.
+        if (response.ok) {
+          return response.text();
+        }
+        // If the response is not okay, throw an error.
+        throw new Error("Network error.");
+      })
+      .then(data => {
+
+        var data = JSON.parse(data);
+
+       if (!data["success"]) {
+         alert("The image could not be deleted. Please refresh the page and try again.");
+        }
+      })
+      .catch(error => {
+        // Log any errors to the console.
+        console.error("Error:", error);
+      });
   }
 
   // ====== Carga inicial desde servidor (append-only) ======
@@ -300,6 +409,7 @@ class Images {
     .then(res => res.json())
     .then(data => {
       if (data["success"]) {
+        alert("The images have been uploaded successfully.");
         // aquí podrías marcar las nuevas como 'server' si el backend devuelve IDs
         // y opcionalmente limpiar 'origin' === 'local'
       }

@@ -185,7 +185,13 @@ class Variations {
    next_variations.addEventListener("click", function(){
      //headerAddProduct.goNext('../../view/images/index.php');
 
-     variationClass.saveVariationDetails();
+     if (nameInput.value != "") {
+       variationClass.saveVariationDetails();
+     }
+     else {
+       alert("Please add a name to the variation.");
+     }
+
    })
 
    addBtn.addEventListener("click", function(){
@@ -263,7 +269,7 @@ class Variations {
       return r.json();
     })
     .then(data => {
-      alert(JSON.stringify(data));
+    //  alert(JSON.stringify(data));
       if (data?.success) {
         headerAddProduct.goNext('../../view/images/index.php');
 

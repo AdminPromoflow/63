@@ -15,11 +15,59 @@ class Images {
 
   public function setSKU(?string $v)      { $v = trim((string)$v); $this->sku  = ($v === '') ? null : $v; }
 
+
   public function setImageAddress(?string $v)      { $v = trim((string)$v); $this->image_address  = ($v === '') ? null : $v; }
 
   public function setSKUVariation(?string $v)      { $v = trim((string)$v); $this->sku_variation  = ($v === '') ? null : $v; }
   //public function setImage(?string $v)    { $v = trim((string)$v); $this->image = ($v === '') ? null : $v; }
 
+  public function deleteImageBySkuVariationAndLink(): bool
+  {
+
+
+      $vsku = $this->sku_variation ?? null;
+      $link = $this->image_address ?? null;
+
+      if (!$vsku || !$link) {
+          return false; // Faltan datos obligatorios
+      }
+    //  echo json_encode(["variationId"=> $variationId]);exit;
+
+      try {
+          $pdo = $this->connection->getConnection();
+
+          // 1. Obtener el ID de la variación usando el SKU
+          $stmtVar = $pdo->prepare("SELECT variation_id FROM variations WHERE SKU = :sku LIMIT 1");
+          $stmtVar->execute([':sku' => $vsku]);
+          $variation = $stmtVar->fetch(\PDO::FETCH_ASSOC);
+
+
+
+          if (!$variation) {
+              return false; // No se encontró la variación
+          }
+
+          $variationId = $variation['variation_id'];
+
+
+
+          // 2. Eliminar la imagen que coincida con el link y el id de variación
+          $stmtDel = $pdo->prepare("
+              DELETE FROM images
+              WHERE variation_id = :vid
+                AND link = :link
+          ");
+
+          return $stmtDel->execute([
+              ':vid'  => $variationId,
+              ':link' => $link
+          ]);
+
+      } catch (\PDOException $e) {
+          error_log('deleteImageBySkuVariationAndLink: ' . $e->getMessage());
+          return false;
+      }
+  }
 
   public function deleteImageWhereUpdatedIs0BySkuVariation(): bool
 {
@@ -46,6 +94,7 @@ class Images {
         return false;
     }
 }
+
 
 
   public function setTo0UpdatedBySKUVariation(): bool

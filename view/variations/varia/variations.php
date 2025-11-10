@@ -18,12 +18,12 @@ $jsTime  = filemtime('../../view/variations/varia/variations.js');
       <!-- Mini menú variaciones (derecha) -->
       <div class="cp-actions" style="gap:6px; position:relative;">
         <button class="btn btn-ghost" id="menu_btn" type="button" aria-haspopup="true" aria-expanded="false">
-          Variations ▾
+          Change variation ▾
         </button>        <ul id="menu_list" class="cp-menu-list" hidden
             style="position:absolute; right:0; top:110%; list-style:none; margin:0; padding:6px; background:#fff; border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); min-width:220px; max-height:260px; overflow:auto;">
           <!-- Se rellena dinámicamente -->
         </ul>
-        <button class="btn btn-primary" id="add_variation" type="button" aria-label="Add variation">+ Add</button>
+        <button class="btn btn-primary" id="add_variation" type="button" aria-label="Add variation">+ New variation</button>
       </div>
     </header>
 

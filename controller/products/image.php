@@ -35,6 +35,11 @@ class Image {
               $this->createUpdateImages($data);
               break;
 
+          case 'delete_image':
+              // Si necesitas archivos opcionales en esta acción:
+              $this->deleteImage($data);
+              break;
+
 
           default:
               header('Content-Type: application/json; charset=utf-8');
@@ -44,7 +49,15 @@ class Image {
   }
 
 
+  private function deleteImage($data){
 
+    $connection = new Database();
+    $image = new Images($connection);
+    $image->setSKUVariation($data['sku_variation']);
+    $image->setImageAddress($data['link_image']);
+    $ok = $image->deleteImageBySkuVariationAndLink();
+    echo json_encode(["success"=> $ok]);
+  }
 
   private function createUpdateImages($data){
       header('Content-Type: application/json; charset=utf-8');
@@ -115,7 +128,7 @@ class Image {
           ];
       }
 
-      $imagesModel->deleteImageWhereUpdatedIs0BySkuVariation(); // <- fijar una sola vez
+  //    $imagesModel->deleteImageWhereUpdatedIs0BySkuVariation(); // <- fijar una sola vez
 
 
       echo json_encode([
