@@ -14,7 +14,7 @@ class Categories {
   }
 
   /** Setters */
-  public function setId($id) { $this->category_id = (int)$id; }
+  public function setId($id) { $this->category_id = (int)$id;}
   public function setSKU($sku) { $this->sku = $sku; }
   public function setName($name) { $this->name = $this->normalizeName($name); }
 
@@ -24,9 +24,40 @@ class Categories {
     return preg_replace('/\s+/', ' ', $s);
   }
 
+  public function getCategoryBySKU() {
+    // Usamos el SKU que se haya seteado previamente
+    $sku = trim((string)$this->sku);
 
-  public function getCategoryIdByName()
-  {
+    if ($sku === '' || strlen($sku) > 50) {
+        return null; // Asegúrate de llamar antes a setSKU($sku)
+    }
+
+    try {
+        $pdo = $this->connection->getConnection();
+
+        $stmt = $pdo->prepare("
+            SELECT
+                c.name AS category_name
+            FROM products p
+            INNER JOIN categories c
+                ON c.category_id = p.category_id
+            WHERE p.SKU = :sku
+            LIMIT 1
+        ");
+
+        $stmt->execute([':sku' => $sku]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Devuelve datos de la categoría + algo del producto, o null si no encuentra
+        return $row ?: null;
+
+    } catch (PDOException $e) {
+        error_log('getCategoryBySKU error (SKU ' . $sku . '): ' . $e->getMessage());
+        return null;
+    }
+}
+
+  public function getCategoryIdByName(){
       try {
           // Usa la variable global (propiedad de clase)
           $name = isset($this->name) ? trim($this->name) : null;

@@ -21,6 +21,7 @@ $jsTime  = filemtime('../../view/product_details/product_details/product_details
     </header>
 
     <!-- Formulario de detalles -->
+    <!-- Formulario de detalles -->
     <form id="productDetailsForm" class="cp-form" autocomplete="off" novalidate>
       <!-- Nombre -->
       <div class="cp-field">
@@ -49,6 +50,22 @@ $jsTime  = filemtime('../../view/product_details/product_details/product_details
         <small id="pd_status_help" class="cp-hint">Choose how the product should be treated in listings.</small>
       </div>
 
+      <!-- Descriptive tagline (ocupa ancho completo) -->
+      <div class="cp-field cp-field-full">
+        <label class="cp-label" for="pd_tagline">Descriptive tagline</label>
+        <input
+          id="pd_tagline"
+          name="descriptive_tagline"
+          type="text"
+          maxlength="160"
+          placeholder="e.g., Ideal for events, offices and schools with full colour printing."
+          aria-describedby="pd_tagline_help"
+        />
+        <small id="pd_tagline_help" class="cp-hint">
+          Short tagline shown in product cards and listings. Up to 160 characters.
+        </small>
+      </div>
+
       <!-- Descripción (ocupa ancho completo) -->
       <div class="cp-field cp-field-full">
         <label class="cp-label" for="pd_desc">Description</label>
@@ -65,6 +82,7 @@ $jsTime  = filemtime('../../view/product_details/product_details/product_details
         </div>
       </div>
     </form>
+
   </section>
 
   <!-- Footer: Next -->

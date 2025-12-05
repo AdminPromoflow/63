@@ -8,6 +8,7 @@ class Products {
   private $sku;          // string (<= 50)
   private $name;         // string (<= 150)
   private $description;  // text
+  private $pd_tagline;  // text
   private $status;       // string (<= 50)
   private $category_id;  // int|null
   private $supplier_id;  // int
@@ -25,6 +26,7 @@ class Products {
   public function setSku($sku)          { $this->sku         = $this->normalizeText($sku); }
   public function setName($name)        { $this->name        = $this->normalizeText($name); }
   public function setDescription($desc)  { $this->description = is_string($desc) ? trim($desc) : null; }
+  public function setTaglineDescription($pd_tagline)  { $this->pd_tagline = is_string($pd_tagline) ? trim($pd_tagline) : null; }
   public function setStatus($status)    { $this->status      = $this->normalizeText($status); }
   public function setCategoryId($id)    { $this->category_id = ($id === null || $id === '') ? null : (int)$id; }
   public function setSupplierId($id)    { $this->supplier_id = (int)$id; }
@@ -161,23 +163,34 @@ class Products {
        if (empty($this->email)) {
          return json_encode(['success'=>false,'error'=>'Email required'], JSON_UNESCAPED_UNICODE);
        }
+
        try {
          $pdo = $this->connection->getConnection();
+
          $sql = "SELECT
-                   p.`SKU`        AS sku,
-                   p.`name`       AS product_name,
+                   p.`SKU`  AS sku,
+                   p.`name` AS product_name,
                    COALESCE(c.`name`, '') AS category_name,
-                   p.`status`     AS status
+                   p.`status` AS status,
+                   vdef.`SKU` AS default_variation_sku
                  FROM products p
-                 INNER JOIN suppliers s ON s.supplier_id = p.supplier_id
-                 LEFT JOIN categories c ON c.category_id = p.category_id
+                 INNER JOIN suppliers s
+                   ON s.supplier_id = p.supplier_id
+                 LEFT JOIN categories c
+                   ON c.category_id = p.category_id
+                 LEFT JOIN variations vdef
+                   ON vdef.product_id = p.product_id
+                  AND LOWER(vdef.`name`) = 'default'
+                  AND (vdef.parent_id IS NULL OR vdef.parent_id = 0)
                  WHERE LOWER(s.email) = LOWER(:email)
                  ORDER BY p.`name` ASC";
+
          $stmt = $pdo->prepare($sql);
          $stmt->execute([':email' => $this->email]);
          $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
          return json_encode(['success'=>true,'data'=>$rows], JSON_UNESCAPED_UNICODE);
+
        } catch (PDOException $e) {
          error_log('getProductsBasicBySupplierEmail error: '.$e->getMessage());
          return json_encode(['success'=>false,'error'=>'DB error'], JSON_UNESCAPED_UNICODE);
@@ -191,6 +204,8 @@ class Products {
      =========================== */
      public function update(): array
      {
+
+
        // Validaciones básicas
        $sku = trim((string)($this->sku ?? ''));
        if ($sku === '' || mb_strlen($sku) > 50) {
@@ -202,16 +217,19 @@ class Products {
          $sql = "UPDATE products
                    SET name        = COALESCE(:name, name),
                        description = COALESCE(:description, description),
+                       descriptive_tagline = COALESCE(:descriptive_tagline, descriptive_tagline),
                        status      = COALESCE(:status, status)
                  WHERE SKU = :sku
                  LIMIT 1";
          // Si tu colación fuese case-sensitive, usa:
          // WHERE SKU COLLATE utf8mb4_general_ci = :sku
+         //echo json_encode($this->pd_tagline."ssss");exit;
 
          $stmt = $pdo->prepare($sql);
          $stmt->execute([
            ':name'        => $this->name,
            ':description' => $this->description,
+           ':descriptive_tagline' => $this->pd_tagline,
            ':status'      => $this->status,
            ':sku'         => $sku,
          ]);
@@ -313,7 +331,7 @@ class Products {
     try {
       $pdo = $this->connection->getConnection();
 
-      $sql = "SELECT p.name, p.description, p.status
+      $sql = "SELECT p.name, p.description, p.status, p.descriptive_tagline
               FROM products p
               WHERE p.SKU = :sku
               LIMIT 1";
@@ -336,6 +354,49 @@ class Products {
       return json_encode(['success' => false, 'error' => 'DB error'], JSON_UNESCAPED_UNICODE);
     }
   }
+
+  public function getProductDetailsBySKU(): ?array
+  {
+      // Validar SKU
+      $sku = trim((string)($this->sku ?? ''));
+      if ($sku === '' || mb_strlen($sku) > 50) {
+          return null;
+      }
+
+      try {
+          $pdo = $this->connection->getConnection();
+
+          $sql = "
+              SELECT
+                  p.SKU              AS sku,
+                  p.name             AS product_name,
+                  p.description,
+                  p.descriptive_tagline,
+                  p.status
+              FROM products p
+              WHERE p.SKU = :sku
+              LIMIT 1
+          ";
+
+          $stmt = $pdo->prepare($sql);
+          $stmt->execute([':sku' => $sku]);
+          $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+          if (!$row) {
+              return null; // SKU no encontrado
+          }
+
+          // Envolvemos en product_details como pediste
+          return ['product_details' => $row];
+
+      } catch (PDOException $e) {
+          error_log('getProductDetailsBySKU error (SKU '.$sku.'): '.$e->getMessage());
+          return null;
+      }
+  }
+
+
+
 
 
 

@@ -13,23 +13,22 @@ $jsTime  = filemtime('../../view/images/img/images.js');
   <section class="cp-card" aria-labelledby="cp-vi-title">
 
     <header class="cp-card-header">
+      <div>
+        <h2 id="cp-vi-title">Images</h2>
+        <p class="cp-subtitle">Upload and manage gallery images for this variation.</p>
+      </div>
 
-      <h2 id="cp-vi-title">Images</h2>
-
-        <!-- Mini menú variaciones (derecha) -->
-        <div class="cp-actions" style="gap:6px; position:relative;">
-          <button class="btn btn-ghost" id="menu_btn" type="button" aria-haspopup="true" aria-expanded="false">
-            Change variation ▾
-          </button>
-          <ul id="menu_list" class="cp-menu-list" hidden
-              style="position:absolute; right:0; top:110%; list-style:none; margin:0; padding:6px; background:#fff; border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); min-width:220px; max-height:260px; overflow:auto;">
-              <li>1</li>
-              <li>1</li>
-              <li>1</li>
-          </ul>
-        </div>
-
+      <!-- Mini menú variaciones (derecha) -->
+      <div class="cp-actions" style="gap:6px; position:relative;">
+        <button class="btn btn-ghost" id="menu_btn" type="button" aria-haspopup="true" aria-expanded="false">
+          Change variation ▾
+        </button>
+        <ul id="menu_list" class="cp-menu-list" hidden>
+          <!-- Se rellena dinámicamente en JS -->
+        </ul>
+      </div>
     </header>
+
 
     <form id="variationImagesForm" class="cp-form" autocomplete="off" novalidate>
       <!-- ÚNICA SECCIÓN: Dropzone + Galería -->

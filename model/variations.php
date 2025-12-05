@@ -11,6 +11,8 @@ class Variation {
   private $pdf_artwork = null;
   private $isAttachAnImage;
   private $isAttachAPDF;
+  private $group_name;
+  private $name_pdf_artwork;
 
 
 
@@ -44,6 +46,8 @@ class Variation {
 
 
   public function setName(?string $v)     { $v = trim((string)$v); $this->name = ($v === '') ? null : $v; }
+  public function setGroupName(?string $v)     { $v = trim((string)$v); $this->group_name = ($v === '') ? null : $v; }
+  public function setNamePdfArtwork(?string $v)     { $v = trim((string)$v); $this->name_pdf_artwork = ($v === '') ? null : $v; }
   public function setSKU(?string $v)      { $v = trim((string)$v); $this->sku  = ($v === '') ? null : $v; }
   public function setSKUParentVariation(?string $v)      { $v = trim((string)$v); $this->sku_parent_variation  = ($v === '') ? null : $v; }
   public function setSKUVariation(?string $v)      { $v = trim((string)$v); $this->sku_variation  = ($v === '') ? null : $v; }
@@ -117,7 +121,9 @@ class Variation {
                 v.image,
                 v.SKU,
                 v.pdf_artwork,
+                v.name_pdf_artwork,
                 v.parent_id,
+                v.`group` AS variation_group,
                 p.name AS parent_name,
                 p.SKU  AS parent_sku
               FROM variations v
@@ -142,7 +148,21 @@ class Variation {
           $stmt->execute([':pid' => $productId]);
           $variations = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-          // 4) Respuesta final (sin json_encode)
+          // 4) Quinta consulta: listar `group` de todas las variations del producto, sin repetir
+          $stmt = $pdo->prepare("
+              SELECT DISTINCT `group`
+              FROM variations
+              WHERE product_id = :pid
+                AND `group` IS NOT NULL
+                AND `group` <> ''
+              ORDER BY `group` ASC
+          ");
+          $stmt->execute([':pid' => $productId]);
+
+          // Devuelve una lista simple: ['Group A', 'Group B', ...]
+          $groupsByProduct = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+
+          // 5) Respuesta final (sin json_encode)
           return [
               'success'    => true,
               'product'    => [
@@ -152,17 +172,21 @@ class Variation {
               ],
               'variations' => $variations, // cada item: ['name'=>..., 'SKU'=>...]
               'current'    => [
-                  'name'        => $row['name'],
-                  'image'       => $row['image'] ?? null,
-                  'sku'         => $row['SKU'],
-                  'pdf_artwork' => $row['pdf_artwork'] ?? null,
-                  'parent_id'   => $row['parent_id'] ? (int)$row['parent_id'] : null,
+                  'name'             => $row['name'],
+                  'image'            => $row['image'] ?? null,
+                  'sku'              => $row['SKU'],
+                  'pdf_artwork'      => $row['pdf_artwork'] ?? null,
+                  'name_pdf_artwork' => $row['name_pdf_artwork'] ?? null,
+                  'parent_id'        => $row['parent_id'] ? (int)$row['parent_id'] : null,
+                  'group'            => $row['variation_group'] ?? null,
               ],
               // ← name y sku del parent_id (puede ser null si no tiene padre)
               'parent'     => [
                   'name' => $row['parent_name'] ?? null,
                   'sku'  => $row['parent_sku']  ?? null,
               ],
+              // Lista de todos los group del producto (sin repetir)
+              'groups_by_product' => $groupsByProduct,
           ];
 
       } catch (PDOException $e) {
@@ -222,10 +246,11 @@ class Variation {
           $pdo->beginTransaction();
 
           // 2) parent_id obligatorio: buscar por SKU del padre (variación)
-          $stmt = $pdo->prepare("SELECT variation_id
-                FROM variations
-               WHERE SKU = :parentSku
-               LIMIT 1
+          $stmt = $pdo->prepare("
+              SELECT variation_id
+              FROM variations
+              WHERE SKU = :parentSku
+              LIMIT 1
           ");
           $stmt->execute([':parentSku' => (string)$this->sku_parent_variation]);
           $parentId = $stmt->fetch(\PDO::FETCH_COLUMN);
@@ -233,10 +258,11 @@ class Variation {
           // 3) Si no retorna parentId: buscar la variación 'default' por NOMBRE dentro del mismo producto del target
           if ($parentId === false) {
               // 3.a) Obtener product_id de la variación objetivo
-              $stmt = $pdo->prepare("SELECT product_id
-                    FROM variations
-                   WHERE SKU = :sku
-                   LIMIT 1
+              $stmt = $pdo->prepare("
+                  SELECT product_id
+                  FROM variations
+                  WHERE SKU = :sku
+                  LIMIT 1
               ");
               $stmt->execute([':sku' => $targetSku]);
               $pid = $stmt->fetch(\PDO::FETCH_COLUMN);
@@ -246,12 +272,13 @@ class Variation {
               }
 
               // 3.b) Buscar variación cuyo nombre contenga 'default' (case-insensitive) en ese producto
-              $stmt = $pdo->prepare("SELECT variation_id
-                    FROM variations
-                   WHERE product_id = :pid
-                     AND LOWER(name) LIKE :like
-                   ORDER BY variation_id ASC
-                   LIMIT 1
+              $stmt = $pdo->prepare("
+                  SELECT variation_id
+                  FROM variations
+                  WHERE product_id = :pid
+                    AND LOWER(name) LIKE :like
+                  ORDER BY variation_id ASC
+                  LIMIT 1
               ");
               $stmt->execute([
                   ':pid'  => (int)$pid,
@@ -272,70 +299,85 @@ class Variation {
 
           // 5) UPDATE por SKU de la variación objetivo
 
-
-
-
           if ($this->isAttachAnImage && $this->isAttachAPDF) {
 
-            $stmt = $pdo->prepare("UPDATE variations
-                   SET name        = :name,
-                       image       = :image,
-                       pdf_artwork = :pdf_artwork,
-                       parent_id   = :parent_id
-                 WHERE SKU = :sku
-                 LIMIT 1
-            ");
+              $stmt = $pdo->prepare("
+                  UPDATE variations
+                     SET name             = :name,
+                         `group`          = :group_name,
+                         image            = :image,
+                         pdf_artwork      = :pdf_artwork,
+                         name_pdf_artwork = :name_pdf_artwork,
+                         parent_id        = :parent_id
+                   WHERE SKU = :sku
+                   LIMIT 1
+              ");
 
-            $stmt->bindValue(':name',        (string)($this->name ?? ''),        \PDO::PARAM_STR);
-            $stmt->bindValue(':image',       (string)($this->image ?? ''),       \PDO::PARAM_STR); // TEXT
-            $stmt->bindValue(':pdf_artwork', (string)($this->pdf_artwork ?? ''), \PDO::PARAM_STR); // TEXT
-            $stmt->bindValue(':parent_id',   $parentId,                          \PDO::PARAM_INT);
-            $stmt->bindValue(':sku',         $targetSku,                         \PDO::PARAM_STR);
-          //  echo json_encode($this->isAttachAnImage .$this->isAttachAPDF);exit;
+              $stmt->bindValue(':name',             (string)($this->name ?? ''),              \PDO::PARAM_STR);
+              $stmt->bindValue(':group_name',       (string)($this->group_name ?? ''),        \PDO::PARAM_STR);
+              $stmt->bindValue(':image',            (string)($this->image ?? ''),             \PDO::PARAM_STR); // TEXT
+              $stmt->bindValue(':pdf_artwork',      (string)($this->pdf_artwork ?? ''),       \PDO::PARAM_STR); // TEXT
+              $stmt->bindValue(':name_pdf_artwork', (string)($this->name_pdf_artwork ?? ''),  \PDO::PARAM_STR);
+              $stmt->bindValue(':parent_id',        $parentId,                                \PDO::PARAM_INT);
+              $stmt->bindValue(':sku',              $targetSku,                               \PDO::PARAM_STR);
 
-          }
-          elseif ($this->isAttachAnImage && !$this->isAttachAPDF) {
-            $stmt = $pdo->prepare("UPDATE variations
-                   SET name        = :name,
-                       image       = :image,
-                       parent_id   = :parent_id
-                 WHERE SKU = :sku
-                 LIMIT 1
-            ");
+          } elseif ($this->isAttachAnImage && !$this->isAttachAPDF) {
 
-            $stmt->bindValue(':name',        (string)($this->name ?? ''),        \PDO::PARAM_STR);
-            $stmt->bindValue(':image',       (string)($this->image ?? ''),       \PDO::PARAM_STR); // TEXT
-            $stmt->bindValue(':parent_id',   $parentId,                          \PDO::PARAM_INT);
-            $stmt->bindValue(':sku',         $targetSku,                         \PDO::PARAM_STR);
+              $stmt = $pdo->prepare("
+                  UPDATE variations
+                     SET name             = :name,
+                         `group`          = :group_name,
+                         image            = :image,
+                         name_pdf_artwork = :name_pdf_artwork,
+                         parent_id        = :parent_id
+                   WHERE SKU = :sku
+                   LIMIT 1
+              ");
 
-          }
-          elseif (!$this->isAttachAnImage && $this->isAttachAPDF) {
-            $stmt = $pdo->prepare("UPDATE variations
-                   SET name        = :name,
-                       pdf_artwork = :pdf_artwork,
-                       parent_id   = :parent_id
-                 WHERE SKU = :sku
-                 LIMIT 1
-            ");
+              $stmt->bindValue(':name',             (string)($this->name ?? ''),             \PDO::PARAM_STR);
+              $stmt->bindValue(':group_name',       (string)($this->group_name ?? ''),       \PDO::PARAM_STR);
+              $stmt->bindValue(':image',            (string)($this->image ?? ''),            \PDO::PARAM_STR); // TEXT
+              $stmt->bindValue(':name_pdf_artwork', (string)($this->name_pdf_artwork ?? ''), \PDO::PARAM_STR);
+              $stmt->bindValue(':parent_id',        $parentId,                               \PDO::PARAM_INT);
+              $stmt->bindValue(':sku',              $targetSku,                              \PDO::PARAM_STR);
 
-            $stmt->bindValue(':name',        (string)($this->name ?? ''),        \PDO::PARAM_STR);
-            $stmt->bindValue(':pdf_artwork', (string)($this->pdf_artwork ?? ''), \PDO::PARAM_STR); // TEXT
-            $stmt->bindValue(':parent_id',   $parentId,                          \PDO::PARAM_INT);
-            $stmt->bindValue(':sku',         $targetSku,                         \PDO::PARAM_STR);
+          } elseif (!$this->isAttachAnImage && $this->isAttachAPDF) {
 
-          }
-          elseif (!$this->isAttachAnImage && !$this->isAttachAPDF) {
-            $stmt = $pdo->prepare("UPDATE variations
-                   SET name        = :name,
-                       parent_id   = :parent_id
-                 WHERE SKU = :sku
-                 LIMIT 1
-            ");
+              $stmt = $pdo->prepare("
+                  UPDATE variations
+                     SET name             = :name,
+                         `group`          = :group_name,
+                         pdf_artwork      = :pdf_artwork,
+                         name_pdf_artwork = :name_pdf_artwork,
+                         parent_id        = :parent_id
+                   WHERE SKU = :sku
+                   LIMIT 1
+              ");
 
-            $stmt->bindValue(':name',        (string)($this->name ?? ''),        \PDO::PARAM_STR);
-            $stmt->bindValue(':parent_id',   $parentId,                          \PDO::PARAM_INT);
-            $stmt->bindValue(':sku',         $targetSku,                         \PDO::PARAM_STR);
+              $stmt->bindValue(':name',             (string)($this->name ?? ''),             \PDO::PARAM_STR);
+              $stmt->bindValue(':group_name',       (string)($this->group_name ?? ''),       \PDO::PARAM_STR);
+              $stmt->bindValue(':pdf_artwork',      (string)($this->pdf_artwork ?? ''),      \PDO::PARAM_STR); // TEXT
+              $stmt->bindValue(':name_pdf_artwork', (string)($this->name_pdf_artwork ?? ''), \PDO::PARAM_STR);
+              $stmt->bindValue(':parent_id',        $parentId,                               \PDO::PARAM_INT);
+              $stmt->bindValue(':sku',              $targetSku,                              \PDO::PARAM_STR);
 
+          } elseif (!$this->isAttachAnImage && !$this->isAttachAPDF) {
+
+              $stmt = $pdo->prepare("
+                  UPDATE variations
+                     SET name             = :name,
+                         `group`          = :group_name,
+                         name_pdf_artwork = :name_pdf_artwork,
+                         parent_id        = :parent_id
+                   WHERE SKU = :sku
+                   LIMIT 1
+              ");
+
+              $stmt->bindValue(':name',             (string)($this->name ?? ''),             \PDO::PARAM_STR);
+              $stmt->bindValue(':group_name',       (string)($this->group_name ?? ''),       \PDO::PARAM_STR);
+              $stmt->bindValue(':name_pdf_artwork', (string)($this->name_pdf_artwork ?? ''), \PDO::PARAM_STR);
+              $stmt->bindValue(':parent_id',        $parentId,                               \PDO::PARAM_INT);
+              $stmt->bindValue(':sku',              $targetSku,                              \PDO::PARAM_STR);
           }
 
           $ok = $stmt->execute();
@@ -343,12 +385,55 @@ class Variation {
 
           return $ok; // true si ejecutó correctamente (aunque no cambie filas)
       } catch (\PDOException $e) {
-          if (isset($pdo)) { $pdo->rollBack(); }
+          if (isset($pdo)) {
+              $pdo->rollBack();
+          }
           // error_log('updateVariationDetails error (sku '.$targetSku.'): '.$e->getMessage());
           return false;
       }
   }
 
+  public function updategroupNameBySkuVariation(): bool
+  {
+
+      // 1) SKU objetivo (la variación que vamos a actualizar)
+      $targetSku = trim((string)($this->sku_variation ?? ''));
+      if ($targetSku === '') {
+          return false;
+      }
+
+  //    echo  json_encode($this->group_name );exit;
+
+      try {
+          $pdo = $this->connection->getConnection();
+          $pdo->beginTransaction();
+
+          // Ojo: `group` va entre backticks porque es palabra reservada
+          $stmt = $pdo->prepare("
+              UPDATE variations
+                 SET `group` = :group_name
+               WHERE SKU = :sku
+               LIMIT 1
+          ");
+
+
+          // Usamos exactamente la propiedad que rellena setGroupName()
+            $stmt->bindValue(':group_name', (string)($this->group_name ?? ''), \PDO::PARAM_STR);
+            $stmt->bindValue(':sku',        $targetSku,                        \PDO::PARAM_STR);
+
+            $ok = $stmt->execute();
+            $pdo->commit();
+
+            return $ok; // true aunque no cambie filas
+
+        } catch (\PDOException $e) {
+            if (isset($pdo)) {
+                $pdo->rollBack();
+            }
+            // error_log('updategroupNameBySkuVariation error (sku '.$targetSku.'): '.$e->getMessage());
+            return false;
+        }
+  }
 
 
 
@@ -425,6 +510,268 @@ class Variation {
 
       } catch (PDOException $e) {
           error_log('createEmptyVariationByProductSku: '.$e->getMessage());
+          return ['success' => false, 'error' => 'DB error'];
+      }
+  }
+
+
+  public function getVariationsBySKU(): array
+  {
+      // 1) Validar SKU de producto
+      $sku = trim((string)($this->sku ?? ''));
+      if ($sku === '' || mb_strlen($sku) > 50) {
+          return ['success' => false, 'error' => 'Product SKU required/invalid'];
+      }
+
+      try {
+          $pdo = $this->connection->getConnection();
+
+          // 2) Traer TODAS las variaciones de ese producto (incluyendo padres e hijos)
+          $sql = "
+              SELECT
+                  v.variation_id,
+                  v.`group`      AS variation_group,
+                  v.name         AS variation_name,
+                  v.SKU          AS variation_sku,
+                  v.image,
+                  v.pdf_artwork,
+                  v.name_pdf_artwork,
+                  v.parent_id,
+                  v.product_id
+              FROM products p
+              INNER JOIN variations v
+                  ON v.product_id = p.product_id
+              WHERE p.SKU = :sku
+              ORDER BY v.variation_id ASC
+          ";
+          $stmt = $pdo->prepare($sql);
+          $stmt->execute([':sku' => $sku]);
+          $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+          if (!$rows) {
+              return ['success' => false, 'error' => 'No variations found for this product'];
+          }
+
+          // 2b) Sacar todos los variation_id para buscar sus imágenes, ítems y precios
+          $variationIds = [];
+          foreach ($rows as $r) {
+              if (!empty($r['variation_id'])) {
+                  $variationIds[] = (int)$r['variation_id'];
+              }
+          }
+          $variationIds = array_values(array_unique($variationIds));
+
+          // Mapas por variation_id
+          $imagesByVariation = [];
+          $itemsByVariation  = [];
+          $pricesByVariation = [];
+
+          if (!empty($variationIds)) {
+              $placeholders = implode(',', array_fill(0, count($variationIds), '?'));
+
+              // -----------------------------------------------------------------
+              // IMAGES
+              // -----------------------------------------------------------------
+              $sqlImg = "
+                  SELECT
+                      image_id,
+                      link,
+                      updated,
+                      variation_id
+                  FROM images
+                  WHERE variation_id IN ($placeholders)
+              ";
+              $stmtImg = $pdo->prepare($sqlImg);
+              $stmtImg->execute($variationIds);
+              $imgRows = $stmtImg->fetchAll(PDO::FETCH_ASSOC);
+
+              foreach ($imgRows as $img) {
+                  $vid = (int)$img['variation_id'];
+                  if (!isset($imagesByVariation[$vid])) {
+                      $imagesByVariation[$vid] = [];
+                  }
+                  $imagesByVariation[$vid][] = [
+                      'image_id' => (int)$img['image_id'],
+                      'link'     => $img['link'],
+                      'updated'  => $img['updated'] !== null ? (int)$img['updated'] : null,
+                  ];
+              }
+
+              // -----------------------------------------------------------------
+              // ITEMS
+              // -----------------------------------------------------------------
+              $sqlItems = "
+                  SELECT
+                      item_id,
+                      name,
+                      description,
+                      variation_id
+                  FROM items
+                  WHERE variation_id IN ($placeholders)
+              ";
+              $stmtItems = $pdo->prepare($sqlItems);
+              $stmtItems->execute($variationIds);
+              $itemRows = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
+
+              foreach ($itemRows as $it) {
+                  $vid = (int)$it['variation_id'];
+                  if (!isset($itemsByVariation[$vid])) {
+                      $itemsByVariation[$vid] = [];
+                  }
+                  $itemsByVariation[$vid][] = [
+                      'item_id'     => (int)$it['item_id'],
+                      'name'        => $it['name'],
+                      'description' => $it['description'],
+                  ];
+              }
+
+              // -----------------------------------------------------------------
+              // PRICES
+              // -----------------------------------------------------------------
+              $sqlPrices = "
+                  SELECT
+                      price_id,
+                      min_quantity,
+                      max_quantity,
+                      price,
+                      variation_id
+                  FROM prices
+                  WHERE variation_id IN ($placeholders)
+              ";
+              $stmtPrices = $pdo->prepare($sqlPrices);
+              $stmtPrices->execute($variationIds);
+              $priceRows = $stmtPrices->fetchAll(PDO::FETCH_ASSOC);
+
+              foreach ($priceRows as $pr) {
+                  $vid = (int)$pr['variation_id'];
+                  if (!isset($pricesByVariation[$vid])) {
+                      $pricesByVariation[$vid] = [];
+                  }
+                  $pricesByVariation[$vid][] = [
+                      'price_id'     => (int)$pr['price_id'],
+                      'min_quantity' => $pr['min_quantity'] !== null ? (int)$pr['min_quantity'] : null,
+                      'max_quantity' => $pr['max_quantity'] !== null ? (int)$pr['max_quantity'] : null,
+                      'price'        => $pr['price'] !== null ? (float)$pr['price'] : null,
+                  ];
+              }
+          }
+
+          // 3) Crear nodos por variation_id
+          $nodes     = [];
+          $parentMap = []; // variation_id => parent_id
+
+          foreach ($rows as $r) {
+              $id        = (int)$r['variation_id'];
+              $parentId  = $r['parent_id'] ? (int)$r['parent_id'] : null;
+              $groupName = $r['variation_group'];
+
+              // NULL ó vacío -> "Default"
+              if ($groupName === null || $groupName === '') {
+                  $groupName = 'Default';
+              }
+
+              $nodes[$id] = [
+                  'variation_id' => $id,
+                  'group'        => $groupName,
+                  'name'         => $r['variation_name'],
+                  'sku'          => $r['variation_sku'],
+                  'details'      => [
+                      'image'            => $r['image'] ?? null,
+                      'pdf_artwork'      => $r['pdf_artwork'] ?? null,
+                      'name_pdf_artwork' => $r['name_pdf_artwork'] ?? null,
+                      'parent_id'        => $parentId,
+                      'product_id'       => $r['product_id'] ? (int)$r['product_id'] : null,
+                  ],
+                  // orden: details, images, items, prices, children
+                  'images'   => $imagesByVariation[$id] ?? [],
+                  'items'    => $itemsByVariation[$id] ?? [],
+                  'prices'   => $pricesByVariation[$id] ?? [],
+                  // hijos agrupados por el group del hijo
+                  'children' => [],  // 'WIDTH' => [...], 'PRINT SIDE' => [...]
+              ];
+
+              $parentMap[$id] = $parentId;
+          }
+
+          // 4) Construir árbol usando parent_id
+          $roots = []; // nodos sin padre (parent_id NULL o padre inexistente)
+
+          foreach ($nodes as $id => &$node) {
+              $parentId = $parentMap[$id];
+
+              if ($parentId !== null && isset($nodes[$parentId])) {
+                  // Soy hijo → me cuelgo del padre,
+                  // agrupado por MI propio group (WIDTH, PRINT SIDE, etc)
+                  $childGroup = $node['group'];
+
+                  if (!isset($nodes[$parentId]['children'][$childGroup])) {
+                      $nodes[$parentId]['children'][$childGroup] = [];
+                  }
+                  $nodes[$parentId]['children'][$childGroup][] = &$node;
+              } else {
+                  // No tengo padre → soy raíz
+                  $roots[] = &$node;
+              }
+          }
+          unset($node); // por seguridad con las referencias
+
+          // 5) Agrupar solo las raíces por su group → Variations['Default'] = [...]
+          $variationsByGroup = [];
+          foreach ($roots as $rootNode) {
+              $g = $rootNode['group']; // ej. "Default"
+              if (!isset($variationsByGroup[$g])) {
+                  $variationsByGroup[$g] = [];
+              }
+              $variationsByGroup[$g][] = $rootNode;
+          }
+
+          // 6) Regla especial para Default:
+          // - Si Default tiene prices: solo Default, sin children
+          // - Si NO tiene prices: todos los hijos directos de Default, sin children (sin nietos)
+          if (isset($variationsByGroup['Default']) && !empty($variationsByGroup['Default'])) {
+              $defaultRoots = $variationsByGroup['Default'];
+              $defaultRoot  = $defaultRoots[0]; // asumimos un solo root Default
+
+              if (!empty($defaultRoot['prices'])) {
+                  // Caso 1: Default tiene precios → solo Default sin children
+                  $cleanRoot = $defaultRoot;
+                  $cleanRoot['children'] = [];
+                  $variationsByGroup['Default'] = [$cleanRoot];
+              } else {
+                  // Caso 2: Default NO tiene precios → usar sus hijos directos, sin children
+                  $flatChildren = [];
+
+                  if (!empty($defaultRoot['children']) && is_array($defaultRoot['children'])) {
+                      foreach ($defaultRoot['children'] as $groupKey => $childrenList) {
+                          if (!is_array($childrenList)) {
+                              continue;
+                          }
+                          foreach ($childrenList as $childNode) {
+                              $childCopy = $childNode;      // copia por valor
+                              $childCopy['children'] = [];  // sin nietos
+                              $flatChildren[] = $childCopy;
+                          }
+                      }
+                  }
+
+                  if (!empty($flatChildren)) {
+                      $variationsByGroup['Default'] = $flatChildren;
+                  } else {
+                      // Si por alguna razón no hay hijos, devolvemos Default sin children
+                      $cleanRoot = $defaultRoot;
+                      $cleanRoot['children'] = [];
+                      $variationsByGroup['Default'] = [$cleanRoot];
+                  }
+              }
+          }
+
+          return [
+              'sku'        => $sku,
+              'Variations' => $variationsByGroup,
+          ];
+
+      } catch (PDOException $e) {
+          error_log('getVariationsBySKU error (SKU '.$sku.'): '.$e->getMessage());
           return ['success' => false, 'error' => 'DB error'];
       }
   }

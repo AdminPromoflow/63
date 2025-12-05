@@ -40,6 +40,10 @@ class Variations {
               $this->saveVariationDetails($data);
               break;
 
+          case 'update_group_name':
+              // Aquí sí esperas archivos image/pdf desde FormData
+              $this->updateGroupName($data);
+              break;
           default:
               header('Content-Type: application/json; charset=utf-8');
               echo json_encode(['success' => false, 'error' => 'Unsupported action']);
@@ -66,6 +70,8 @@ class Variations {
       $sku_variation = $_POST['sku_variation'] ?? $data['sku_variation'] ?? null;
       $name = $_POST['name'] ?? $data['name'] ?? null;
       $variation_name = $_POST['name'] ?? $data['name'] ?? null;
+      $name_pdf_artwork = $_POST['name_pdf_artwork'] ?? $data['name_pdf_artwork'] ?? null;
+      $group = $_POST['group'] ?? $data['group'] ?? null;
       $imageFile     = $_FILES['imageFile']    ?? null;
       $pdfFile       = $_FILES['pdfFile']      ?? null;  // ← nuevo
 
@@ -106,6 +112,10 @@ class Variations {
       $variation->setImage($imagePath ?: '');
       $variation->setPdfArtwork($pdfPath   ?: '');
       $variation->setSKUParentVariation($sku_parent_variation   ?: '');
+
+      $variation->setNamePdfArtwork($name_pdf_artwork   ?: '');
+      $variation->setGroupName($group   ?: '');
+
 
       $ok = $variation->updateVariationDetails();
 
@@ -246,6 +256,17 @@ class Variations {
     $variation->setSKUVariation($sku);
 
     echo json_encode ($variation->createEmptyVariationByProductSku());
+
+  }
+  private function updateGroupName($data){
+
+    $connection = new Database();
+    $variation = new Variation($connection);
+
+    $variation->setSKUVariation($data['sku_variation']);
+    $variation->setGroupName($data['group_name'] ?? null);
+
+    echo json_encode ($variation->updategroupNameBySkuVariation());
 
   }
 

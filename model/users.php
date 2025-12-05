@@ -6,6 +6,7 @@ class Users {
   private $email;     // User's email
   private $password;  // User's password
   private $signup_category;  // User's signup category
+  private $sku;     // sku
 
   // Nuevos atributos
   private $phone;
@@ -24,6 +25,10 @@ class Users {
   // Set the user's name
   public function setName($name) {
     $this->name = $name;
+  }
+  // Set the user's name
+  public function setSKU($SKU) {
+    $this->SKU = $SKU;
   }
 
   // Set the user's email.
@@ -168,6 +173,38 @@ class Users {
      }
    }
 
+   public function getUserCompanyBySKU() {
+       // Usamos el SKU que se haya seteado previamente
+       $sku = trim((string)($this->SKU ?? $this->sku ?? ''));
+
+       if ($sku === '') {
+           return null; // Asegúrate de llamar antes a setSKU($sku)
+       }
+
+       try {
+           $pdo = $this->connection->getConnection();
+
+           $stmt = $pdo->prepare("
+               SELECT
+                   s.company_name
+               FROM products p
+               INNER JOIN suppliers s
+                   ON s.supplier_id = p.supplier_id
+               WHERE p.SKU = :sku
+               LIMIT 1
+           ");
+
+           $stmt->execute([':sku' => $sku]);
+           $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+           // Devuelve los datos del supplier + algo del producto, o null si no se encuentra
+           return $row ?: null;
+
+       } catch (PDOException $e) {
+           error_log('getUserCompanyBySKU error (SKU ' . $sku . '): ' . $e->getMessage());
+           return null;
+       }
+   }
 
    public function requestProfileInfo() {
      if (empty($this->email)) return null;

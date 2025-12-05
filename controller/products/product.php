@@ -34,8 +34,12 @@ class Product {
         $this->getProductBasicBySKU($data);
         break;
 
+      case 'get_preview_product_details':
+        $this->getPreviewProductDetails($data);
+        break;
 
 
+//
       default:
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['response' => false, 'error' => 'Unsupported action']);
@@ -43,6 +47,33 @@ class Product {
     }
   }
 
+
+  private function getPreviewProductDetails($data){
+    header('Content-Type: application/json; charset=utf-8');
+
+
+
+  /*  $connection = new Database();
+    $product   = new Products($connection);
+
+
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+      session_start();
+    }
+    $product->setId($_SESSION['idProduct']);
+
+    $product->setName($data["name"]);
+    $product->setStatus($data["status"]);
+    $product->setDescription($data["description"]);
+    $product->setTaglineDescription($data["pd_tagline"]);
+    $product->setSku($data["sku"]);*/
+
+
+  //  $response = $product->update();
+
+
+    echo json_encode("response");
+  }
 
     private function getProductBasicBySKU($data){
       header('Content-Type: application/json; charset=utf-8');
@@ -88,6 +119,7 @@ class Product {
     $product->setName($data["name"]);
     $product->setStatus($data["status"]);
     $product->setDescription($data["description"]);
+    $product->setTaglineDescription($data["pd_tagline"]);
     $product->setSku($data["sku"]);
 
 

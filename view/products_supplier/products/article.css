@@ -1,18 +1,37 @@
 :root{
-  --brand:   var(--brand, #005548);
-  --accent:  var(--accent, #fbd160);
-  --border:  var(--border, #e5e7eb);
-  --card:    var(--card, #fff);
-  --muted:   var(--muted, #6b7280);
-  --text:    var(--text, #111827);
-  --radius:  var(--radius, 16px);
-  --shadow:  var(--shadow, 0 8px 24px rgba(17,24,39,.08));
-  --space-1: var(--space-1, 8px);
-  --space-2: var(--space-2, 12px);
-  --space-3: var(--space-3, 16px);
-  --space-4: var(--space-4, 24px);
+  /* Theme tokens (single source of truth) */
+  --brand:   #00695c;                 /* main brand green */
+  --accent:  #fbd160;
+  --page-bg: #e4f3ee;                 /* soft green background */
+
+  --bg:      var(--page-bg);
+  --card:    #ffffff;
+  --text:    #0b1110;
+  --muted:   #5b6a65;
+  --border:  #c6ddd4;
+
+  --brand-soft:  #ecfdf5;
+
+  --radius:    18px;
+  --radius-sm: 14px;
+
+  --shadow:       0 8px 24px rgba(17,24,39,.08);
+  --shadow-soft:  0 10px 30px rgba(11, 17, 16, 0.08);
+
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 24px;
+
+  /* Aliases (keep names you already use elsewhere) */
+  --price: var(--brand);
+  --buy: var(--brand);
+  --buy-hover: #005248;
 }
 
+body{
+  margin-top: 90px;
+}
 /* Flecha atrás + título degradado */
 .ds-header-left{ display:flex; align-items:center; gap: 12px; }
 .btn-icon.back-btn{
@@ -125,11 +144,10 @@
     border:0; padding:0; white-space:normal; display:grid; grid-template-columns:110px 1fr; gap:8px;
   }
   .products__table td.right, .products__table td.center{ justify-self:end; grid-template-columns:1fr; }
+
   .products__table td:nth-child(1)::before{ content:"SKU"; font-weight:700; color:var(--muted); }
   .products__table td:nth-child(2)::before{ content:"Product"; font-weight:700; color:var(--muted); }
   .products__table td:nth-child(3)::before{ content:"Category"; font-weight:700; color:var(--muted); }
-  .products__table td:nth-child(4)::before{ content:"Price"; font-weight:700; color:var(--muted); }
-  .products__table td:nth-child(5)::before{ content:"Status"; font-weight:700; color:var(--muted); }
-  .products__table td:nth-child(6)::before{ content:"Updated"; font-weight:700; color:var(--muted); }
-  .products__table td:nth-child(7)::before{ content:"Action"; font-weight:700; color:var(--muted); }
+  .products__table td:nth-child(4)::before{ content:"Status"; font-weight:700; color:var(--muted); }
+  .products__table td:nth-child(5)::before{ content:"Action"; font-weight:700; color:var(--muted); }
 }

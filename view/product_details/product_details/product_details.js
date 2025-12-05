@@ -50,6 +50,7 @@ class ClassAddProductDetails {
          pd_name.value = data["data"]["name"];
          pd_desc.value = data["data"]["description"];
          pd_status.value = data["data"]["status"];
+         pd_tagline.value = data["data"]["descriptive_tagline"];
 
 
         }
@@ -70,6 +71,7 @@ class ClassAddProductDetails {
       name: pd_name.value,
       status: pd_status.value,
       description: pd_desc.value,
+      pd_tagline: pd_tagline.value,
       sku: sku
     };
     // Make a fetch request to the given URL with the specified data.
@@ -108,6 +110,7 @@ class ClassAddProductDetails {
 const pd_name = document.getElementById("pd_name");
 const pd_status = document.getElementById("pd_status");
 const pd_desc = document.getElementById("pd_desc");
+const pd_tagline = document.getElementById("pd_tagline");
 const next_product_details = document.getElementById("next_product_details");
 
 

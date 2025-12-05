@@ -26,14 +26,17 @@ body.body_dashboard_supplier{
   color: var(--text);
   background: var(--bg);
   margin: 0;
+  margin-top: 90px;
 }
 
 /* CONTENEDOR PRINCIPAL (con padding) */
 .dashboard_supplier{
-  width: var(--container);
+  position: relative;
+  width: 80%;
   margin: 0 auto;
   padding: var(--space-4);
 }
+
 
 /* Tarjetas y utilidades */
 .card{

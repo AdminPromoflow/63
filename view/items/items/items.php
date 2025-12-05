@@ -14,7 +14,7 @@ $jsVer  = file_exists($jsPath)  ? md5_file($jsPath)  : time();
 <link rel="stylesheet" href="../../view/items/items/items.css?v=<?= $cssVer ?>">
 
 <main class="create_product" aria-labelledby="it-title">
-  <h1 id="it-title" class="sr-only">Create Product — Items</h1>
+<!--  <h1 id="it-title" class="sr-only">Create Product — Items</h1>-->
 
   <!-- Tabs -->
   <?php include "../../view/global/header_add_product/header_add_product.php" ?>
@@ -32,9 +32,7 @@ $jsVer  = file_exists($jsPath)  ? md5_file($jsPath)  : time();
           </button>
           <ul id="menu_list" class="cp-menu-list" hidden
               style="position:absolute; right:0; top:110%; list-style:none; margin:0; padding:6px; background:#fff; border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); min-width:220px; max-height:260px; overflow:auto;">
-              <li>1</li>
-              <li>1</li>
-              <li>1</li>
+          
           </ul>
         </div>
 
