@@ -158,7 +158,7 @@ class ProductsSupplierClass {
       const st = statusMap[statusRaw] || { text: statusRaw || "Draft", cls: "badge-warning" };
 
       // ✅ URL EXACTA como pediste, con sku + sku_variation
-      const href = `../../63/view/category/index.php?sku=${encodeURIComponent(sku)}&sku_variation=${encodeURIComponent(skuVariation)}`;
+      const href = `../../view/category/index.php?sku=${encodeURIComponent(sku)}&sku_variation=${encodeURIComponent(skuVariation)}`;
 
       tbody.innerHTML += `
         <tr class="row-link"
