@@ -108,7 +108,7 @@ class ProductsSupplierClass {
         throw new Error("Network error.");
       })
       .then((txt) => {
-        alert(txt);
+    //    alert(txt);
         const res = JSON.parse(txt);
 
         // ✅ res esperado: { success:true, data:[...] }
@@ -158,7 +158,7 @@ class ProductsSupplierClass {
       const st = statusMap[statusRaw] || { text: statusRaw || "Draft", cls: "badge-warning" };
 
       // ✅ URL EXACTA como pediste, con sku + sku_variation
-      const href = `http://localhost/63/view/category/index.php?sku=${encodeURIComponent(sku)}&sku_variation=${encodeURIComponent(skuVariation)}`;
+      const href = `../../63/view/category/index.php?sku=${encodeURIComponent(sku)}&sku_variation=${encodeURIComponent(skuVariation)}`;
 
       tbody.innerHTML += `
         <tr class="row-link"
