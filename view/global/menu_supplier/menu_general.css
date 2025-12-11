@@ -1,0 +1,228 @@
+:root {
+  --page-bg: #e4f3ee;        /* soft green background */
+  --bg: var(--page-bg);
+  --card: #ffffff;
+  --text: #0b1110;
+  --muted: #5b6a65;
+  --border: #c6ddd4;
+  --brand: #00695c;          /* main brand green */
+  --brand-soft: #ecfdf5;
+  --shadow-soft: 0 10px 30px rgba(11, 17, 16, 0.08);
+  --radius: 18px;
+  --radius-sm: 14px;
+  --price: var(--brand);
+  --buy: var(--brand);
+  --buy-hover: #005248;
+
+  /* altura aprox. del header para compensar el contenido */
+  --header-height: 64px;
+}
+
+/* ===== Reset mínimo + body ===== */
+*,
+*::before,
+*::after{
+  box-sizing: border-box;
+}
+
+ul { margin: 0; padding: 0; list-style: none; }
+a  { text-decoration: none; color: inherit; }
+
+html, body{
+  margin: 0;
+  padding: 0;
+  z-index: 50;
+}
+
+body{
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* deja espacio para el header fijo, para que no se tape el contenido */
+  padding-top: var(--header-height);
+}
+
+/* ===== Header ===== */
+.site-header{
+  position: fixed;               /* antes: sticky */
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--brand);
+  border-bottom: none;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  transition: transform .25s ease;   /* importante para animar */
+  z-index: 20;
+}
+
+/* Ocultar header cuando se hace scroll hacia abajo */
+.site-header--hidden{
+  transform: translateY(-100%);
+}
+
+/* Marca */
+.brand{
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+.brand-text{
+  letter-spacing: .5px;
+  color: #fff;                           /* asegura que el logo-text sea blanco */
+}
+.brand-logo{
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Botón hamburguesa */
+.burger{
+  width: 36px;
+  height: 28px;
+  display: inline-block;
+  position: relative;
+  cursor: pointer;
+  z-index: 1010;  /* un poco por encima del header para seguridad */
+}
+.burger::before,
+.burger::after{
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: #fff;                      /* líneas blancas sobre fondo verde */
+  transition: transform .25s ease, top .25s ease, opacity .25s ease;
+}
+.burger::before{ top: 6px; }
+.burger::after{ top: 19px; }
+/* línea central */
+.burger{
+  background: linear-gradient(#fff 0 0) center 50%/100% 3px no-repeat;
+}
+
+/* Navegación: móvil -> panel deslizante */
+.nav{
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(80vw, 300px);
+  transform: translateX(100%);
+  transition: transform .3s ease;
+  background: var(--brand);              /* panel también con verde de marca */
+  padding: 5rem 1.25rem 2rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  z-index: 1005;                         /* debajo del header, encima del contenido */
+}
+
+.nav-list{
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  width: 100%;
+}
+
+.nav-list a{
+  display: block;
+  padding: .9rem 1rem;
+  color: #fff;
+  border-radius: 8px;
+  transition: background .2s ease, transform .2s ease;
+}
+.nav-list a:hover{
+  background: rgba(255,255,255,.10);
+  transform: translateX(2px);
+}
+.nav-list .cta{
+  background: #fff;
+  color: var(--brand);                   /* botón Logout en verde de marca */
+  font-weight: 600;
+}
+.nav-list .cta:hover{
+  background: #f3f5f8;
+}
+
+/* Abrir menú cuando el checkbox está marcado */
+.nav-toggle:checked ~ .nav{
+  transform: translateX(0);
+}
+/* Animación hamburguesa -> X */
+.nav-toggle:checked + .burger{
+  background: none;
+}
+.nav-toggle:checked + .burger::before{
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+}
+.nav-toggle:checked + .burger::after{
+  top: 50%;
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+/* ====== Tablet y Desktop ====== */
+@media (min-width: 768px){
+  /* el body puede tener un poquito menos de padding si quieres */
+  body{
+    padding-top: calc(var(--header-height) - 4px);
+  }
+
+  .site-header{
+    padding: 0.75rem 2rem;
+  }
+
+  .burger{
+    display: none;
+  }
+
+  .nav{
+    position: static;
+    transform: none;
+    background: transparent;             /* el header ya tiene var(--brand) */
+    padding: 0;
+    width: auto;
+    height: auto;
+  }
+
+  .nav-list{
+    flex-direction: row;
+    align-items: center;
+    gap: .75rem;
+  }
+
+  .nav-list a{
+    color: #fff;
+    padding: .5rem .9rem;
+  }
+
+  .nav-list a:hover{
+    background: rgba(0,0,0,.18);
+    transform: none;
+  }
+
+  .nav-list .cta{
+    background: #fff;
+    color: var(--brand);
+    border-radius: 999px;
+    padding-inline: 1.25rem;
+  }
+  .nav-list .cta:hover{
+    background: #f3f5f8;
+  }
+}

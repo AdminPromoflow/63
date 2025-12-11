@@ -7,6 +7,8 @@
   </head>
 
   <body>
-    <h1>Hola</h1>
+    <script type="text/javascript">
+    window.location.href = 'view/main/index.php';
+    </script>
   </body>
 </html>

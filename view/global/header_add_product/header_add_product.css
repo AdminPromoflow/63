@@ -1,0 +1,40 @@
+.cp-tab{
+  cursor: pointer;
+}
+/* Tabs / Card / Form (reutiliza tu patrón) */
+.cp-tabs{
+  position: sticky; top:0; z-index:5; background:var(--card);
+  border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow);
+  display:flex; flex-wrap:wrap; gap:6px; padding:8px; margin-bottom:16px;
+}
+.cp-tab{
+  text-decoration:none; color:var(--text); border:1px solid var(--border);
+  background:#fff; padding:8px 12px; border-radius:999px; font-weight:700; font-size:.95rem;
+  transition: background .15s, transform .15s, box-shadow .15s, color .15s, border-color .15s;
+}
+.cp-tab:hover{ transform: translateY(-1px); box-shadow: var(--shadow); }
+.cp-tab.active{ background: var(--brand); color:#fff; border-color: var(--brand); }
+
+.cp-card{
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:16px;
+}
+.cp-card-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.cp-card-header h2{ margin:0; font-size:1.05rem; }
+
+.cp-form{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.cp-field{ display:grid; gap:6px; }
+.cp-field-full{ grid-column:1 / -1; }
+.cp-label{ font-weight:700; }
+.cp-hint{ color:var(--muted); }
+
+.cp-select,
+.cp-form input[type="text"],
+.cp-form textarea,
+.cp-form select{
+  border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:10px 12px; background:#fff; color:var(--text); outline:none; min-height:42px;
+}
+.cp-form input:focus, .cp-form textarea:focus, .cp-form select:focus{
+  border-color:var(--brand); box-shadow:0 0 0 3px rgba(0,85,72,.14);
+}
