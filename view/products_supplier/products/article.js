@@ -166,7 +166,7 @@ class ProductsSupplierClass {
             data-sku="${this._escAttr(sku.toLowerCase())}"
             data-category="${this._escAttr(category)}"
             data-status="${this._escAttr(st.text)}"
-            tabindex="0"
+            tabindex="0">
           <td>${this._escHtml(sku)}</td>
           <td>
             <div class="prod-name">${this._escHtml(name)}</div>
