@@ -5,13 +5,15 @@ class PreviewLogic {
    this.currentImages = [];
    this.currentImageIndex = 0;
 
-   this.getDataBySKUProduct();
+  // this.getDataProduct();
  }
 
- getDataBySKUProduct() {
+ getDataProduct() {
    // 1) Obtener SKU desde la URL
    const params = new URLSearchParams(window.location.search);
    const sku = params.get("sku");
+
+   //alert(sku);
 
    if (!sku) {
      console.warn("No SKU in URL");
@@ -37,7 +39,6 @@ class PreviewLogic {
        return response.text();
      })
      .then(text => {
-    //   alert(text);
        let json;
 
        // 3) Parsear JSON con control de errores
@@ -65,6 +66,8 @@ class PreviewLogic {
        if (section_variations) {
          section_variations.innerHTML = "";
        }
+       alert(JSON.stringify(variationsBlock));
+
 
       // alert(JSON.stringify(variationsBlock.Variations.Default));
     /*  let groupNames = [];

@@ -135,6 +135,7 @@ $jsTime2  = @filemtime($jsPath2)  ?: time();
         <section id="section_variations" class="sp-variations js-fade-up" aria-label="Product configuration">
 
           <div class="var-group" aria-labelledby="var_label_size_1">
+
             <div class="var-label">
               <span class="var-name">Width</span>
               <strong id="var_label_size_1">20mm</strong>
@@ -142,7 +143,7 @@ $jsTime2  = @filemtime($jsPath2)  ?: time();
 
             <div class="var-options" id="sp_var_group_size_1">
 
-            <!--  <button  type="button" class="var-option js-scale-in">
+              <button  type="button" class="var-option js-scale-in">
                 <img class="var-thumb"
                      src="https://upload.wikimedia.org/wikipedia/commons/6/6d/Various_lanyards.jpg"
                      alt="Slim lanyard sample">
@@ -187,13 +188,15 @@ $jsTime2  = @filemtime($jsPath2)  ?: time();
                      alt="Oversized sponsor lanyard">
                 <span class="opt-main">35mm</span>
                 <span class="opt-sub">Sponsor logos</span>
-              </button> -->
+              </button>
 
             </div>
+
           </div>
 
 
           <div class="var-group" aria-labelledby="var_label_size_2">
+
             <div class="var-label">
               <span class="var-name">Print side</span>
               <strong id="var_label_size_2">Double sided</strong>
@@ -202,13 +205,13 @@ $jsTime2  = @filemtime($jsPath2)  ?: time();
             <div class="var-options">
               <button type="button" class="var-option is-selected js-scale-in">
                 <span class="opt-main">Double sided</span>
-                <span class="opt-sub">Most popular</span>
               </button>
               <button type="button" class="var-option js-scale-in">
                 <span class="opt-main">Single sided</span>
                 <span class="opt-sub">Budget option</span>
               </button>
             </div>
+
           </div>
 
 
