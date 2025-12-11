@@ -39,6 +39,7 @@ $jsTime  = filemtime('../../view/products_supplier/products/article.js');
         <select name="status">
           <option value="">All</option>
           <option>Active</option>
+          <option>Inactive</option>
           <option>Draft</option>
           <option>Archived</option>
         </select>
